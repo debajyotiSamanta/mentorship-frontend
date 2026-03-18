@@ -34,11 +34,14 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <div className="min-h-screen bg-dark-900 flex flex-col font-sans">
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <div className="min-h-screen bg-dark-900 flex flex-col font-sans">
           <Navbar />
           <main className="flex-1">
             <Routes>
@@ -72,6 +75,7 @@ function App() {
         </div>
       </AuthProvider>
     </BrowserRouter>
+  </ErrorBoundary>
   );
 }
 
