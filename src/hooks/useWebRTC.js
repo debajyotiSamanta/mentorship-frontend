@@ -140,7 +140,7 @@ export function useWebRTC(socket, remoteUserId) {
 
   // Method to manually start call (create offer)
   const startCall = async () => {
-    if (!socket || !localStream || !targetSocketId) return;
+    if (!socket || !localStream || !remoteUserId) return;
     
     console.log('📞 Starting call, creating offer');
     if (peerConnection.current) {
@@ -162,7 +162,7 @@ export function useWebRTC(socket, remoteUserId) {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit('webrtc-ice-candidate', {
-          targetSocketId,
+          targetUserId: remoteUserId,
           candidate: event.candidate,
         });
       }
