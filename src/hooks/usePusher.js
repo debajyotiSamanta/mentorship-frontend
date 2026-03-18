@@ -13,6 +13,7 @@ export function usePusher(sessionId, token, userId) {
     if (!token || !sessionId) return;
 
     // Initialize Pusher
+    console.log(`🔌 Initializing Pusher with Key: ${PUSHER_KEY}, Cluster: ${PUSHER_CLUSTER}`);
     const pusherClient = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
       authEndpoint: `${API_URL}/pusher/auth`,
@@ -23,9 +24,25 @@ export function usePusher(sessionId, token, userId) {
       },
     });
 
+    pusherClient.connection.bind('error', (err) => {
+      console.error('❌ Pusher Connection Error:', err);
+    });
+
+    pusherClient.connection.bind('state_change', (states) => {
+      console.log('🔄 Pusher State Change:', states.current);
+    });
+
     // Subscribe to presence channel
-    // Channels must be prefixed with 'presence-' for presence features
+    console.log(`📡 Subscribing to: presence-session-${sessionId}`);
     const presenceChannel = pusherClient.subscribe(`presence-session-${sessionId}`);
+
+    presenceChannel.bind('pusher:subscription_error', (status) => {
+      console.error('❌ Pusher Subscription Error:', status);
+    });
+
+    presenceChannel.bind('pusher:subscription_succeeded', () => {
+      console.log('✅ Pusher Subscription Succeeded');
+    });
 
     setPusher(pusherClient);
     setChannel(presenceChannel);
