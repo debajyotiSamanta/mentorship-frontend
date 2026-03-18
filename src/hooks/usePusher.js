@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Pusher from 'pusher-js';
 
 const PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
@@ -55,64 +55,63 @@ export function usePusher(sessionId, token, userId) {
     };
   }, [sessionId, token]);
 
-  if (!channel) return null;
+  const socket = useMemo(() => {
+    if (!channel) return null;
 
-  return {
-    userId,
-    on: (event, callback) => {
-      if (event === 'room-participants') {
-        channel.bind('pusher:subscription_succeeded', (members) => {
-          const users = [];
-          members.each(member => users.push({
-            userId: member.id,
-            name: member.info.name,
-            role: member.info.role
-          }));
-          callback(users);
-        });
-      } else if (event === 'user-joined') {
-        channel.bind('pusher:member_added', (member) => {
-          callback({
-            userId: member.id,
-            name: member.info.name,
-            role: member.info.role
+    return {
+      userId,
+      on: (event, callback) => {
+        if (event === 'room-participants') {
+          channel.bind('pusher:subscription_succeeded', (members) => {
+            const users = [];
+            members.each(member => users.push({
+              userId: member.id,
+              name: member.info.name,
+              role: member.info.role
+            }));
+            callback(users);
           });
-        });
-      } else if (event === 'user-left') {
-        channel.bind('pusher:member_removed', (member) => {
-          callback({
-            userId: member.id,
-            name: member.info.name
+        } else if (event === 'user-joined') {
+          channel.bind('pusher:member_added', (member) => {
+            callback({
+              userId: member.id,
+              name: member.info.name,
+              role: member.info.role
+            });
           });
-        });
-      } else {
-        // Regular events and Client events
-        // Note: Client events are received without the 'client-' prefix by the listener
-        channel.bind(event, callback);
-        channel.bind(`client-${event}`, callback);
+        } else if (event === 'user-left') {
+          channel.bind('pusher:member_removed', (member) => {
+            callback({
+              userId: member.id,
+              name: member.info.name
+            });
+          });
+        } else {
+          channel.bind(event, callback);
+          channel.bind(`client-${event}`, callback);
+        }
+      },
+      off: (event, callback) => {
+        channel.unbind(event, callback);
+        channel.unbind(`client-${event}`, callback);
+      },
+      emit: (event, data) => {
+        const clientEvents = [
+          'code-change', 
+          'code-update',
+          'language-change', 
+          'language-update',
+          'webrtc-offer', 
+          'webrtc-answer', 
+          'webrtc-ice-candidate'
+        ];
+        
+        if (clientEvents.includes(event)) {
+          channel.trigger(`client-${event}`, data);
+        }
       }
-    },
-    off: (event, callback) => {
-      channel.unbind(event, callback);
-      channel.unbind(`client-${event}`, callback);
-    },
-    emit: (event, data) => {
-      // For Pusher, many events will move to API calls, 
-      // but some can be 'client events' for low-latency peer-to-peer sync.
-      // Client events must be enabled in Pusher dashboard.
-      const clientEvents = [
-        'code-change', 
-        'code-update',
-        'language-change', 
-        'language-update',
-        'webrtc-offer', 
-        'webrtc-answer', 
-        'webrtc-ice-candidate'
-      ];
-      
-      if (clientEvents.includes(event)) {
-        channel.trigger(`client-${event}`, data);
-      }
-    }
-  };
+    };
+  }, [channel, userId]);
+
+  return socket;
 }
