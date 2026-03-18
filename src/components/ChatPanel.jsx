@@ -41,15 +41,19 @@ export default function ChatPanel({ socket, sessionId }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !socket) return;
+    if (!input.trim()) return;
 
-    socket.emit('send-message', {
-      sessionId,
-      content: input,
-    });
-    setInput('');
+    try {
+      await api.post('/messages', {
+        session_id: sessionId,
+        content: input,
+      });
+      setInput('');
+    } catch (err) {
+      console.error('Failed to send message', err);
+    }
   };
 
   return (

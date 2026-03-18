@@ -66,8 +66,8 @@ export function useWebRTC(socket, remoteUserId) {
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit('webrtc-ice-candidate', {
-            targetSocketId,
             candidate: event.candidate,
+            fromUserId: socket.userId // We'll need to add this property to our socket wrapper
           });
         }
       };
@@ -93,7 +93,6 @@ export function useWebRTC(socket, remoteUserId) {
       await pc.setLocalDescription(answer);
 
       socket.emit('webrtc-answer', {
-        targetSocketId: fromSocketId,
         answer,
       });
     };
@@ -140,7 +139,7 @@ export function useWebRTC(socket, remoteUserId) {
   }, [socket, localStream]);
 
   // Method to manually start call (create offer)
-  const startCall = async (targetSocketId) => {
+  const startCall = async () => {
     if (!socket || !localStream || !targetSocketId) return;
     
     console.log('📞 Starting call, creating offer');
@@ -173,7 +172,6 @@ export function useWebRTC(socket, remoteUserId) {
     await pc.setLocalDescription(offer);
 
     socket.emit('webrtc-offer', {
-      targetSocketId,
       offer,
     });
   };

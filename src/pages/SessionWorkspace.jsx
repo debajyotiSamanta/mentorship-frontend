@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../hooks/useSocket';
+import { usePusher } from '../hooks/usePusher';
 import { useWebRTC } from '../hooks/useWebRTC';
 import api from '../lib/api';
 
@@ -45,7 +45,7 @@ export default function SessionWorkspace() {
   // 2. Initialize Socket (only if session exists)
   const sessionId = sessionInfo?.id;
   const token = localStorage.getItem('token');
-  const socket = useSocket(sessionId, token);
+  const socket = usePusher(sessionId, token, user.id);
 
   // 3. Keep track of remote user for WebRTC targets based on room events
   const [remoteUserId, setRemoteUserId] = useState(null);
@@ -88,7 +88,7 @@ export default function SessionWorkspace() {
         // Or just let user click a button. Let's auto-start if I am the mentor.
         if (user.role === 'mentor') {
           setTimeout(() => {
-            startCall(otherUser.socketId);
+            startCall();
           }, 2000); // give WebRTC a sec to init devices
         }
       }
@@ -108,7 +108,7 @@ export default function SessionWorkspace() {
       // If mentor is already in the room and student joins, start the call
       if (user.role === 'mentor') {
         setTimeout(() => {
-          startCall(joinedUser.socketId);
+          startCall();
         }, 2000);
       }
     });

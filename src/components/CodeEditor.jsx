@@ -58,7 +58,9 @@ export default function CodeEditor({ socket, sessionId }) {
     isTyping.current = true;
     
     if (socket) {
-      socket.emit('code-change', { sessionId, code: value });
+      // Using 'code-update' as the event name for both sending and receiving 
+      // to match the client-event logic in usePusher
+      socket.emit('code-update', { code: value });
     }
 
     // Reset typing flag quickly so we can receive updates
