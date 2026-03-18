@@ -45,7 +45,7 @@ export default function SessionWorkspace() {
   // 2. Initialize Socket (only if session exists)
   const sessionId = sessionInfo?.id;
   const token = localStorage.getItem('token');
-  const socket = usePusher(sessionId, token, user.id);
+  const socket = usePusher(sessionId, token, user.id, setError);
 
   // 3. Keep track of remote user for WebRTC targets based on room events
   const [remoteUserId, setRemoteUserId] = useState(null);

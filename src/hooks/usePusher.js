@@ -5,7 +5,7 @@ const PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
 const PUSHER_CLUSTER = import.meta.env.VITE_PUSHER_CLUSTER;
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export function usePusher(sessionId, token, userId) {
+export function usePusher(sessionId, token, userId, onError) {
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
 
@@ -26,6 +26,7 @@ export function usePusher(sessionId, token, userId) {
 
     pusherClient.connection.bind('error', (err) => {
       console.error('❌ Pusher Connection Error:', err);
+      if (onError) onError('Failed to connect to real-time service.');
     });
 
     pusherClient.connection.bind('state_change', (states) => {
@@ -38,6 +39,7 @@ export function usePusher(sessionId, token, userId) {
 
     presenceChannel.bind('pusher:subscription_error', (status) => {
       console.error('❌ Pusher Subscription Error:', status);
+      if (onError) onError(`Real-time subscription failed: ${status}`);
     });
 
     presenceChannel.bind('pusher:subscription_succeeded', () => {
