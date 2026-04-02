@@ -1,16 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
-
-// Global error listener for production debugging
-window.onerror = (msg, url, lineNo, columnNo, error) => {
-  console.error('🌐 Global Window Error:', { msg, url, lineNo, columnNo, error });
-  return false;
-};
 import Navbar from './components/Navbar';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import SessionWorkspace from './pages/SessionWorkspace';
+
+// Global error listener for production debugging
+window.onerror = (msg, url, lineNo, columnNo, error) => {
+  console.error('Global Window Error:', { msg, url, lineNo, columnNo, error });
+  return false;
+};
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {

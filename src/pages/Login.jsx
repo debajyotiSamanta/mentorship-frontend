@@ -20,7 +20,19 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to login. Please check credentials.');
+      console.error('Login error:', err);
+      // Priority: custom user message > error response > generic message
+      let errorMessage = 'Failed to sign in. Please check your email and password.';
+      
+      if (err.userMessage) {
+        errorMessage = err.userMessage;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

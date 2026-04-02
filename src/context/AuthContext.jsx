@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
       const res = await api.get('/auth/me');
       setUser(res.data.user);
     } catch (err) {
+      console.error('Check user failed:', err);
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
     } finally {
       setLoading(false);
@@ -30,21 +32,75 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
+    try {
+      if (!email || !password) {
+        const error = new Error('Email and password are required');
+        error.userMessage = 'Please enter both email and password';
+        throw error;
+      }
+
+      const res = await api.post('/auth/login', { email, password });
+      
+      if (!res.data.token) {
+        throw new Error('No token received from server');
+      }
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
+      return res.data;
+    } catch (err) {
+      console.error('Login error:', err);
+      // Use custom error message if available
+      if (err.userMessage) {
+        const error = new Error(err.userMessage);
+        error.response = err.response;
+        throw error;
+      }
+      throw err;
+    }
   };
 
   const register = async (email, password, full_name, role, skills, availability) => {
-    const res = await api.post('/auth/register', { email, password, full_name, role, skills, availability });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
+    try {
+      if (!email || !password || !full_name || !role) {
+        const error = new Error('Missing required fields');
+        error.userMessage = 'Please fill in all required fields';
+        throw error;
+      }
+
+      const res = await api.post('/auth/register', { 
+        email, 
+        password, 
+        full_name, 
+        role, 
+        skills, 
+        availability 
+      });
+      
+      if (!res.data.token) {
+        throw new Error('No token received from server');
+      }
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
+      return res.data;
+    } catch (err) {
+      console.error('Register error:', err);
+      // Use custom error message if available
+      if (err.userMessage) {
+        const error = new Error(err.userMessage);
+        error.response = err.response;
+        throw error;
+      }
+      throw err;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
@@ -55,4 +111,10 @@ export function AuthProvider({ children }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};

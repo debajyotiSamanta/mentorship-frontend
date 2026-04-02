@@ -25,10 +25,27 @@ export default function Register() {
     setLoading(true);
     
     try {
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        setLoading(false);
+        return;
+      }
+      
       await register(formData.email, formData.password, formData.full_name, formData.role);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create account. Please try again.');
+      console.error('Register error:', err);
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (err.userMessage) {
+        errorMessage = err.userMessage;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

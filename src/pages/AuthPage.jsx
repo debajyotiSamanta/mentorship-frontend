@@ -32,7 +32,18 @@ export default function AuthPage() {
       await login(loginEmail, loginPassword);
       navigate('/dashboard');
     } catch (err) {
-      setLoginError(err.response?.data?.error || 'Failed to sign in.');
+      console.error('Login error:', err);
+      let errorMessage = 'Failed to sign in. Please check your email and password.';
+      
+      if (err.userMessage) {
+        errorMessage = err.userMessage;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setLoginError(errorMessage);
     } finally {
       setLoginLoading(false);
     }
@@ -52,10 +63,27 @@ export default function AuthPage() {
     setRegError('');
     setRegLoading(true);
     try {
+      if (regData.password.length < 6) {
+        setRegError('Password must be at least 6 characters long');
+        setRegLoading(false);
+        return;
+      }
+      
       await register(regData.email, regData.password, regData.full_name, regData.role, regData.skills, regData.availability);
       navigate('/dashboard');
     } catch (err) {
-      setRegError(err.response?.data?.error || 'Failed to create account.');
+      console.error('Register error:', err);
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (err.userMessage) {
+        errorMessage = err.userMessage;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setRegError(errorMessage);
     } finally {
       setRegLoading(false);
     }
