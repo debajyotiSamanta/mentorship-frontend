@@ -8,12 +8,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export function usePusher(sessionId, token, userId, onError) {
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
 
   useEffect(() => {
     if (!token || !sessionId) return;
 
     // Initialize Pusher
-    console.log(`🔌 Initializing Pusher with Key: ${PUSHER_KEY}, Cluster: ${PUSHER_CLUSTER}`);
+    if (import.meta.env.DEV) {
+      console.log(`🔌 Initializing Pusher with Key: ${PUSHER_KEY}, Cluster: ${PUSHER_CLUSTER}`);
+    }
+
     const pusherClient = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
       authEndpoint: `${API_URL}/pusher/auth`,
@@ -22,38 +26,70 @@ export function usePusher(sessionId, token, userId, onError) {
           Authorization: `Bearer ${token}`,
         },
       },
+      enableLogging: import.meta.env.DEV, // Only log Pusher internals in dev
     });
 
     pusherClient.connection.bind('error', (err) => {
-      console.error('❌ Pusher Connection Error:', err);
-      if (onError) onError('Failed to connect to real-time service.');
+      console.error('Pusher Connection Error:', err?.message || err);
+      setConnectionStatus('error');
+      if (onError) onError('Real-time connection failed. Chat may not update in real-time.');
     });
 
     pusherClient.connection.bind('state_change', (states) => {
-      console.log('🔄 Pusher State Change:', states.current);
+      if (import.meta.env.DEV) {
+        console.log('Pusher State Change:', states.current);
+      }
+      setConnectionStatus(states.current);
     });
 
-    // Subscribe to presence channel
-    console.log(`📡 Subscribing to: presence-session-${sessionId}`);
-    const presenceChannel = pusherClient.subscribe(`presence-session-${sessionId}`);
+    pusherClient.connection.bind('connected', () => {
+      if (import.meta.env.DEV) {
+        console.log('✅ Pusher Connected');
+      }
+      setConnectionStatus('connected');
+    });
+
+    // Subscribe to presence channel with error handling
+    if (import.meta.env.DEV) {
+      console.log(`📡 Subscribing to: presence-session-${sessionId}`);
+    }
+
+    let presenceChannel;
+    try {
+      presenceChannel = pusherClient.subscribe(`presence-session-${sessionId}`);
+    } catch (err) {
+      console.error('Failed to subscribe to presence channel:', err);
+      if (onError) onError('Failed to join session. Please try again.');
+      return;
+    }
 
     presenceChannel.bind('pusher:subscription_error', (status) => {
-      console.error('❌ Pusher Subscription Error:', status);
-      if (onError) onError(`Real-time subscription failed: ${status}`);
+      console.error('Pusher Subscription Error:', status);
+      setConnectionStatus('error');
+      if (onError) onError('Failed to join real-time session.');
     });
 
     presenceChannel.bind('pusher:subscription_succeeded', () => {
-      console.log('✅ Pusher Subscription Succeeded');
+      if (import.meta.env.DEV) {
+        console.log('✅ Pusher Subscription Succeeded');
+      }
+      setConnectionStatus('subscribed');
     });
 
     setPusher(pusherClient);
     setChannel(presenceChannel);
 
     return () => {
-      console.log('🔌 Disconnecting Pusher');
-      presenceChannel.unbind_all();
-      pusherClient.unsubscribe(`presence-session-${sessionId}`);
-      pusherClient.disconnect();
+      if (import.meta.env.DEV) {
+        console.log('Disconnecting Pusher');
+      }
+      try {
+        presenceChannel.unbind_all();
+        presenceChannel.unsubscribe();
+        pusherClient.disconnect();
+      } catch (err) {
+        console.error('Error during Pusher cleanup:', err);
+      }
     };
   }, [sessionId, token]);
 

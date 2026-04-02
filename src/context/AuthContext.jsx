@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
       const res = await api.get('/auth/me');
       setUser(res.data.user);
     } catch (err) {
-      console.error('Check user failed:', err);
+      if (import.meta.env.DEV) {
+        console.error('Check user failed:', err);
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
@@ -50,7 +52,9 @@ export function AuthProvider({ children }) {
       setUser(res.data.user);
       return res.data;
     } catch (err) {
-      console.error('Login error:', err);
+      if (import.meta.env.DEV) {
+        console.error('Login error:', err);
+      }
       // Use custom error message if available
       if (err.userMessage) {
         const error = new Error(err.userMessage);
@@ -87,7 +91,9 @@ export function AuthProvider({ children }) {
       setUser(res.data.user);
       return res.data;
     } catch (err) {
-      console.error('Register error:', err);
+      if (import.meta.env.DEV) {
+        console.error('Register error:', err);
+      }
       // Use custom error message if available
       if (err.userMessage) {
         const error = new Error(err.userMessage);
